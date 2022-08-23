@@ -1,0 +1,31 @@
+version: '3.8'
+
+services:
+  wasm-build:
+    container_name: 'cfddlcjs-wasm-builder'
+    build:
+      context: .
+      dockerfile: Dockerfile
+      target: cfd_wasm_builder
+    environment:
+      WASM_SRC: /private/cfd-dlc-js-wasm
+      WASM_WORK: /private/work/cfd-dlc-js-wasm
+    working_dir: /private/cfd-dlc-js-wasm
+    volumes:
+      - /private/work
+      - .:/private/cfd-dlc-js-wasm
+    entrypoint: /private/cfd-dlc-js-wasm/tools/build_for_release.sh
+
+  wasm-test:
+    image: ghcr.io/cryptogarageinc/elements-testing:v0.1.1
+    volumes:
+      - ./:/workspace
+    working_dir: /workspace
+    command: /bin/bash -c "npm install && npm run test_example"
+
+  wasm-update-package-lock:
+    image: ghcr.io/cryptogarageinc/elements-testing:v0.1.1
+    volumes:
+      - ./:/workspace
+    working_dir: /workspace
+    command: /bin/bash -c "./tools/update_package.sh"
