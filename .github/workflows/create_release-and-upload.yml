@@ -1,0 +1,68 @@
+name: create-release-upload
+
+on: 
+  push:
+    tags:
+    - 'v*'
+
+jobs:
+  create-releases:
+    name: create-releases
+    runs-on: ubuntu-latest
+
+    steps:
+    - name: checkout
+      uses: actions/checkout@v2
+    - name: Get the version
+      id: get_version
+      run: echo ::set-output name=VERSION::${GITHUB_REF/refs\/tags\//}
+    - name: check package.json version
+      env:
+        version: ${{ steps.get_version.outputs.VERSION }}
+      run: node ./tools/checker.js version ${version}
+    - name: Create Release
+      id: create_release
+      uses: actions/create-release@v1
+      env:
+        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      with:
+        tag_name: ${{ github.ref }}
+        release_name: Release ${{ github.ref }}
+        body: |
+          Changes in this Release
+          - First Change
+          - Second Change
+        draft: false
+        prerelease: false
+#      continue-on-error: true
+    - name: Get release
+      if: steps.create_release.outcome == 'failure'
+      id: get_release
+      uses: bruceadams/get-release@v1.2.0
+      env:
+        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+    - name: output url
+      id: output_url
+      run: |
+        echo "::set-output name=upload_url::${{steps.get_release.outputs.upload_url}}${{steps.create_release.outputs.upload_url}}"
+    - name: create archive file
+      env:
+        TAR_NAME: cfdwasm-${{ steps.get_version.outputs.VERSION }}-0.tar
+      run: |
+        mkdir work
+        cp -rp dist/* work
+        cp cfdjs_wasm_jsonapi.js work
+        cd work
+        zip -r ../cfd.zip .
+        tar -cvf ../$TAR_NAME *
+        cd ..
+        gzip $TAR_NAME
+        echo "---- dump file ----"
+        ls -l
+        mv cfd.zip cfdwasm-${{ steps.get_version.outputs.VERSION }}-0.zip
+    - name: Upload Release Asset Ubuntu
+      uses: softprops/action-gh-release@v1
+      with:
+        files: |
+          cfdwasm-${{ steps.get_version.outputs.VERSION }}-0.tar.gz
+          cfdwasm-${{ steps.get_version.outputs.VERSION }}-0.zip
