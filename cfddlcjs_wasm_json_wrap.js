@@ -1,30 +1,30 @@
-const cfddlcjsWasmJson = require('./cfddlcjs_wasm_json.js');
+import cfddlcjsWasmJson from './cfddlcjs_wasm_json.js'
 
-const wrappedModule = {};
-let hasLoaded = false;
+const wrappedModule = {}
+let hasLoaded = false
 cfddlcjsWasmJson['onRuntimeInitialized'] = async () => {
   if ('onRuntimeInitialized' in wrappedModule) {
-    wrappedModule.onRuntimeInitialized();
+    wrappedModule.onRuntimeInitialized()
   }
-  hasLoaded = true;
-};
+  hasLoaded = true
+}
 
-wrappedModule['addInitializedListener'] = function(func) {
+wrappedModule['addInitializedListener'] = function (func) {
   if (hasLoaded) {
-    if (func) func();
+    if (func) func()
   } else {
-    wrappedModule['onRuntimeInitialized'] = func;
+    wrappedModule['onRuntimeInitialized'] = func
   }
-};
+}
 
-wrappedModule['getCfddlc'] = function() {
-  return cfddlcjsWasmJson;
-};
+wrappedModule['getCfddlc'] = function () {
+  return cfddlcjsWasmJson
+}
 
-wrappedModule['hasLoadedWasm'] = function() {
-  return hasLoaded;
-};
+wrappedModule['hasLoadedWasm'] = function () {
+  return hasLoaded
+}
 
-wrappedModule['CfdError'] = cfddlcjsWasmJson.CfdError;
+wrappedModule['CfdError'] = cfddlcjsWasmJson.CfdError
 
-module.exports = wrappedModule;
+export default wrappedModule

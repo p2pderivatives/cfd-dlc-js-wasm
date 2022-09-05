@@ -1,57 +1,62 @@
-const cfddlcjsWasm = require('./dist/cfddlcjs_wasm.js');
-const cfddlcjsWasmJsonApi = require('./cfddlcjs_wasm_jsonapi.js');
-cfddlcjsWasm['preInit'] = function() {};
+import cfddlcjsWasmGetter from './dist/cfddlcjs_wasm.js'
+import cfddlcjsWasmJsonApi from './cfddlcjs_wasm_jsonapi.js'
+import cfddlcjsWasmBase from './dist/cfddlcjs_wasm.wasm'
 
-const wrappedModule = {};
-cfddlcjsWasm['onRuntimeInitialized'] = async () => {
+const wrappedModule = {}
+cfddlcjsWasmGetter({
+  locateFile: (f) => {
+    if (f.endsWith('.wasm')) return cfddlcjsWasmBase
+    return f
+  },
+}).then(async (cfddlcjsWasm) => {
   const funcNameResult = await cfddlcjsWasmJsonApi.ccallCfd(
-      cfddlcjsWasm,
-      cfddlcjsWasm._cfdjsGetJsonApiNames,
-      'string',
-      [],
-      [],
-  );
+    cfddlcjsWasm,
+    cfddlcjsWasm._cfdjsGetJsonApiNames,
+    'string',
+    [],
+    []
+  )
   if (funcNameResult.indexOf('Error:') >= 0) {
     throw new cfddlcjsWasmJsonApi.CfdError(
-        `cfdjsGetJsonApiNames internal error. ${funcNameResult}`,
-    );
+      `cfdjsGetJsonApiNames internal error. ${funcNameResult}`
+    )
   }
-  const funcList = funcNameResult.split(',');
+  const funcList = funcNameResult.split(',')
 
   // register function list
   funcList.forEach((requestName) => {
-    const hook = async function(...args) {
+    const hook = async function (...args) {
       if (args.length > 1) {
         throw new cfddlcjsWasmJsonApi.CfdError(
-            'ERROR: Invalid argument passed:' +
-            `func=[${requestName}], args=[${args}]`,
-        );
+          'ERROR: Invalid argument passed:' +
+            `func=[${requestName}], args=[${args}]`
+        )
       }
-      let arg = '';
+      let arg = ''
       if (typeof args === 'undefined') {
-        arg = '';
+        arg = ''
       } else if (typeof args === 'string') {
-        arg = args;
+        arg = args
       } else if (args) {
-        arg = args[0];
+        arg = args[0]
       }
       return await cfddlcjsWasmJsonApi.callJsonApi(
-          cfddlcjsWasm,
-          requestName,
-          arg,
-      );
-    };
+        cfddlcjsWasm,
+        requestName,
+        arg
+      )
+    }
 
     Object.defineProperty(wrappedModule, requestName, {
       value: hook,
       enumerable: true,
-    });
-  });
+    })
+  })
 
   if ('onRuntimeInitialized' in wrappedModule) {
-    wrappedModule.onRuntimeInitialized();
+    wrappedModule.onRuntimeInitialized()
   }
-};
+})
 
-module.exports = wrappedModule;
-module.exports.CfdError = cfddlcjsWasmJsonApi.CfdError;
+export default wrappedModule
+export const CfdError = cfddlcjsWasmJsonApi.CfdError

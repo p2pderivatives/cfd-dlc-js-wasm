@@ -98,3 +98,8 @@ target_link_libraries(${CFDDLCJS_WASM_LIBRARY}
     ${UNIVALUE_LIBRARY}
     ${LIBWALLY_LIBRARY}
 )
+
+
+set_target_properties(${CFDDLCJS_WASM_LIBRARY}
+  PROPERTIES
+    LINK_FLAGS "-s WASM=1 -s ENVIRONMENT=web -s EXPORT_ES6=1")
